@@ -7,13 +7,32 @@ defmodule ExMtgDownloader.MagicSpoiler.Cards do
       |> parse_card(card_url)
   end
 
-  def get_html_card(card_url) do
+  defp get_file_name(card_url) do
+    card = card_url
+      |> String.split("/")
+      |> Enum.at(4)
+
+    "/tmp/mtg/html/#{card}.html"
+  end
+
+  defp downlaod_html(card_url, file_name) do
+    IO.puts("[MagicSpoiler.Cards] get info: #{card_url}")
     case HTTPoison.get(card_url) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
+        File.write!(file_name, body)
         body
       {:error, %HTTPoison.Error{reason: reason}} ->
         IO.puts("erro ao fazer downlaod", reason)
         ""
+    end
+  end
+
+  def get_html_card(card_url) do
+    file_name = get_file_name(card_url)
+    if File.exists?(file_name) do
+      File.read!(file_name)
+    else
+      downlaod_html(card_url, file_name)
     end
   end
 
@@ -34,8 +53,9 @@ defmodule ExMtgDownloader.MagicSpoiler.Cards do
       |> Floki.text
       |> String.replace("Rarity: ", "")
 
-    {:ok, %ExMtgDownloader.Structures.Card{name: name,
-        image: image, url: url, type: type, rarity: rarity}}
+    %ExMtgDownloader.FiveColors.Card{name: name, label: name, artist: "ixalan",
+        multiverseid: "ixalan", rate: 0, rate_votes: 0, multiverse_number: "ixalan",
+        image: image, url: url, type_label: type, rarity: rarity}
   end
 
 end
